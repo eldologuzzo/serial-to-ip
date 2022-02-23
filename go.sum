@@ -1,2 +1,15 @@
+github.com/eldologuzzo/serial v0.0.0-20220216222011-554da46a0364 h1:L78vNC3PxTHka26xQ1o1hGhHFXXzW7pmaO64/xe9L+4=
+github.com/eldologuzzo/serial v0.0.0-20220216222011-554da46a0364/go.mod h1:YBPWX4TFd2BwYUL8UQ9lym3ICjnSYQuv/zNfJNWWxRY=
+github.com/eldologuzzo/serial v0.0.0-20220216224223-2fe72d6c3c27 h1:78Je7z5fBHU1CHTu+WGijNwkRczCWZ6/3U+WHczp6sg=
+github.com/eldologuzzo/serial v0.0.0-20220216224223-2fe72d6c3c27/go.mod h1:YBPWX4TFd2BwYUL8UQ9lym3ICjnSYQuv/zNfJNWWxRY=
+github.com/jeanphorn/log4go v0.0.0-20190526082429-7dbb8deb9468 h1:1C4yN/psU4rpTqmuN8ZU7uzMyIvM8m4m6xgy6W0e/5k=
+github.com/jeanphorn/log4go v0.0.0-20190526082429-7dbb8deb9468/go.mod h1:VRGsDaBwSjfG6KG3PtW5uoGc+iqzEG3jEdo2b1ZwSJc=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
 github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
+github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07 h1:d/VUIMNTk65Xz69htmRPNfjypq2uNRqVsymcXQu6kKk=
+github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07/go.mod h1:FbXpUxsx5in7z/OrWFDdhYetOy3/VGIJsVHN9G7RUPA=
+golang.org/x/sys v0.0.0-20220209214540-3681064d5158 h1:rm+CHSpPEEW2IsXUib1ThaHIjuBVZjxNgSKmBLFfD4c=
+golang.org/x/sys v0.0.0-20220209214540-3681064d5158/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+gopkg.in/ini.v1 v1.66.4 h1:SsAcf+mM7mRZo2nJNGt8mZCjG8ZRaNGMURJw7BsIST4=
+gopkg.in/ini.v1 v1.66.4/go.mod h1:pNLf8WUiyNEtQjuu5G5vTm06TEv9tsIgeAvK8hOrP4k=
+
