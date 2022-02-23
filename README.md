@@ -16,18 +16,18 @@ Serial to IP gateway
 Show help
 
 ```
-$ serial2tcp_x64 -h
+$ serial-to-ip -h
 ```
 
 Sample application
 
 ```
-$ serial2tcp_x64 -serial-port COM3 -baudrate 19200 -parity E -stop-bits 1 -tcp-port 502
+$ serial-to-ip -serial-port COM3 -baudrate 19200 -parity E -stop-bits 1 -tcp-port 502
 ```
 
 ## Downloads
 
-For downloading compiled application, please visit [release](https://github.com/annlumia/serial2ip/releases) page.
+For downloading compiled application, please visit [release](https://github.com/eldologuzzo/serial-to-ip/releases) page.
 
 ## TODO
 
