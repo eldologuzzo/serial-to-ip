@@ -1,4 +1,4 @@
-# serial2ip
+# serial-to-ip
 
 Serial to IP gateway
 
