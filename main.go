@@ -1,20 +1,23 @@
-// serial-to-ip
+/// serial-to-ip
 // File:    serial-to-ip.go
 // Author:  annlumia, Eldo Loguzzo
-// Date:    2022/02/23
-// Version: 1.0.2
+// Date:    2022/02/28
+// Version: 1.1.0
 //
 //
 // TODO
-//==============================================================================================
+//==================================================================================================================================================
 // Date              Author        Note
-//==============================================================================================
-//==============================================================================================
+//==================================================================================================================================================
+//==================================================================================================================================================
 //
 // CHANTELOG
-//==============================================================================================
+//==================================================================================================================================================
 // Date              Author    Version   Description
-//==============================================================================================
+//==================================================================================================================================================
+// 2022022801300EX   Eldo      1.1.0     Se permiten esperas previas a la escritura del puerto serial
+//                                       no solo posteriores, se agregan las mismas esperas para la comunicion TCP y se cambian nombres a algunos
+//                                       parametros
 // 2022022309024EX   Eldo      1.0.2     Se permiten modificarlos buffer para Lectura de ambos
 //                                       protocolos
 // 202202230900MEX   Eldo      1.0.1     Se Permite modificar el Timer que tiene en el loop de
@@ -23,7 +26,7 @@
 //                                       configuracion
 // 202202150720MEX   Eldo      0.1.0     Initital - Deriva del original de annlumia
 //                                       https://github.com/annlumia/serial2ip
-//==============================================================================================
+//==================================================================================================================================================
 
 package main
 
@@ -45,26 +48,32 @@ import (
 	"github.com/eldologuzzo/serial"
 )
 
-var Version = "1.0.2"
+var Version = "1.1.0"
 
 var (
-	help                 = flag.Bool("help", false, "Help")
-	Logger               = flag.String("Logger", "logger.properties", "Logger Config File")
-	serialPortName       = flag.String("serial-port", "COM2", "Port name of serial")
-	serialPortParity     = flag.String("parity", "E", "Serial port parity (N, O, E,M, S)")
-	serialPortStopBit    = flag.Int("stop-bits", 1, "Serial port stop bits (1, 15, 2)")
-	baudrate             = flag.Int("baudrate", 9600, "Baudrate of serial port")
-	output               = flag.Int("tcp-port", 9000, "TCP port output")
-	responseInterval     = flag.String("response-interval", "1000ms", "delay before reading loop")
-	serialWriteDelay     = flag.String("serial-write-delay", "100ms", "delay after read serial response")
-	serialPortBufferSize = flag.Int("serial-buffer-size", 64, "Serial Port Buffer Size")
-	tcpPortBufferSize    = flag.Int("tcp-buffer-size", 64, "TCP Buffer Size")
+	help                   = flag.Bool("help", false, "Help")
+	Logger                 = flag.String("Logger", "logger.properties", "Logger Config File")
+	beforeReadDelay        = flag.String("before-read-delay", "0ms", "delay before reading loop")
+	serialPortName         = flag.String("serial-port", "COM2", "Port name of serial")
+	serialPortParity       = flag.String("serial-parity", "E", "Serial port parity (N, O, E,M, S)")
+	serialPortStopBit      = flag.Int("serial-stop-bits", 1, "Serial port stop bits (1, 15, 2)")
+	serialBaudrate         = flag.Int("serial-baudrate", 9600, "Serial Baudrate of serial port")
+	serialBeforeWriteDelay = flag.String("serial-before-write-delay", "0ms", "delay before write serial response")
+	serialAfterWriteDelay  = flag.String("serial-alfer-write-delay", "100ms", "delay after write serial response")
+	serialPortBufferSize   = flag.Int("serial-buffer-size", 64, "Serial Port Buffer Size")
+	tcpPort                = flag.Int("tcp-port", 9000, "TCP port output")
+	tcpPortBufferSize      = flag.Int("tcp-buffer-size", 64, "TCP Buffer Size")
+	tcpBeforeWriteDelay    = flag.String("tcp-before-write-delay", "0ms", "delay before write tcp response")
+	tcpAfterWriteDelay     = flag.String("tcp-alfer-write-delay", "0ms", "delay after write tcp response")
 )
 
-var Response_Interval time.Duration
+var BeforeReadSleepTime time.Duration
 
 func main() {
-	var SleepTime time.Duration
+	var SerialBeforeSleepTime time.Duration
+	var SerialAfterSleepTime time.Duration
+	var TCPBeforeSleepTime time.Duration
+	var TCPAfterSleepTime time.Duration
 
 	flag.Usage = func() {
 		_, _ = fmt.Fprintf(os.Stderr, "%s v%s (%s/%s/%s)\n", os.Args[0], Version, runtime.GOOS, runtime.GOARCH, runtime.Version())
@@ -85,16 +94,19 @@ func main() {
 
 	log.Info("Serial Port to IP converter (%s) v%s (%s/%s/%s)", os.Args[0], Version, runtime.GOOS, runtime.GOARCH, runtime.Version())
 	log.Info("Config:")
-	log.Info("   serial-port=%s", *serialPortName)
-	log.Info("   baudrate=%d", *baudrate)
-	log.Info("   parity=%s", *serialPortParity)
-	log.Info("   stop-bits=%d", *serialPortStopBit)
-	log.Info("   tcp-port=%d", *output)
 	log.Info("   Logger=%s", *Logger)
-	log.Info("   response-interval=%s", *responseInterval)
-	log.Info("   serial-write-delay=%s", *serialWriteDelay)
+	log.Info("   before-read-delay=%s", *beforeReadDelay)
+	log.Info("   serial-port=%s", *serialPortName)
+	log.Info("   serial-baudrate=%d", *serialBaudrate)
+	log.Info("   serial-parity=%s", *serialPortParity)
+	log.Info("   serial-stop-bits=%d", *serialPortStopBit)
+	log.Info("   serial-before-write-delay=%s", *serialBeforeWriteDelay)
+	log.Info("   serial-after-write-delay=%s", *serialAfterWriteDelay)
 	log.Info("   serial-buffer-size=%d", *serialPortBufferSize)
+	log.Info("   tcp-port=%d", *tcpPort)
 	log.Info("   tcp-buffer-size=%d", *tcpPortBufferSize)
+	log.Info("   tcp-before-write-delay=%s", *tcpBeforeWriteDelay)
+	log.Info("   tcp-after-write-delay=%s", *tcpAfterWriteDelay)
 
 	parity := serial.ParityEven
 	switch *serialPortParity {
@@ -110,7 +122,7 @@ func main() {
 		parity = serial.ParitySpace
 	}
 
-	serConfig := serial.Config{Name: *serialPortName, Baud: *baudrate, Parity: parity, StopBits: serial.StopBits(*serialPortStopBit)}
+	serConfig := serial.Config{Name: *serialPortName, Baud: *serialBaudrate, Parity: parity, StopBits: serial.StopBits(*serialPortStopBit)}
 
 	serPort, err := serial.OpenPort(&serConfig)
 
@@ -119,26 +131,47 @@ func main() {
 		os.Exit(3)
 	}
 
-	SleepTime, Error := time.ParseDuration(*serialWriteDelay)
+	BeforeReadSleepTime, BeforeReadError := time.ParseDuration(*beforeReadDelay)
 
-	if Error != nil {
-		_ = log.Error("The erial-write-delay Parameter format invalid %s: %v", *serialWriteDelay, Error)
+	if BeforeReadError != nil {
+		_ = log.Error("The before-read-delay Parameter format invalid %s: %v", *beforeReadDelay, BeforeReadError)
 		os.Exit(4)
 	}
 
-	Response_Interval, Error := time.ParseDuration(*responseInterval)
+	SerialBeforeSleepTime, SerialErrorBefore := time.ParseDuration(*serialBeforeWriteDelay)
 
-	if Error != nil {
-		_ = log.Error("The responseInterval Parameter format invalid %s: %v", *responseInterval, Error)
-		os.Exit(4)
+	if SerialErrorBefore != nil {
+		_ = log.Error("The serial-before-write-delay Parameter format invalid %s: %v", *serialBeforeWriteDelay, SerialErrorBefore)
+		os.Exit(5)
+	}
+
+	SerialAfterSleepTime, SerialErrorAfter := time.ParseDuration(*serialAfterWriteDelay)
+
+	if SerialErrorAfter != nil {
+		_ = log.Error("The serial-after-write-delay Parameter format invalid %s: %v", *serialAfterWriteDelay, SerialErrorAfter)
+		os.Exit(6)
+	}
+
+	TCPBeforeSleepTime, TCPErrorBefore := time.ParseDuration(*tcpBeforeWriteDelay)
+
+	if TCPErrorBefore != nil {
+		_ = log.Error("The tcp-before-write-delay Parameter format invalid %s: %v", *tcpBeforeWriteDelay, TCPErrorBefore)
+		os.Exit(7)
+	}
+
+	TCPAfterSleepTime, TCPErrorAfter := time.ParseDuration(*tcpAfterWriteDelay)
+
+	if TCPErrorAfter != nil {
+		_ = log.Error("The tcp-after-write-delay Parameter format invalid %s: %v", *tcpAfterWriteDelay, TCPErrorAfter)
+		os.Exit(8)
 	}
 
 	// Forzado, ya que sino no detecta el Uso de Reponse_invertal
-	<-time.After(Response_Interval)
+	<-time.After(BeforeReadSleepTime)
 
 	defer serPort.Close()
 
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*output))
+	listener, err := net.Listen("tcp", ":"+strconv.Itoa(*tcpPort))
 	defer listener.Close()
 
 	ser2ipBuf := make([]byte, *serialPortBufferSize)
@@ -170,12 +203,13 @@ func main() {
 
 			encodedString := hex.EncodeToString(ser2ipBuf[0:readResult.bytesRead])
 
-			log.Trace("main - [%s]", encodedString)
+			log.Trace("main -    [%s]", encodedString)
 
 			if readResult.err != nil {
 				serialErr = readResult.err
 			} else {
 				if currentCon != nil {
+					time.Sleep(TCPBeforeSleepTime)
 					_, connErr = currentCon.Write(ser2ipBuf[0:readResult.bytesRead])
 					log.Debug("main - Write to IP: %d", readResult.bytesRead)
 				}
@@ -186,6 +220,7 @@ func main() {
 
 				serPortReadMore <- true
 
+				time.Sleep(TCPAfterSleepTime)
 				log.Debug("main - End Serial->IP")
 
 			}
@@ -194,12 +229,14 @@ func main() {
 
 			encodedString := hex.EncodeToString(ip2serBuf[0:readResult.bytesRead])
 
-			log.Trace("main - [%s]", encodedString)
+			log.Trace("main -   [%s]", encodedString)
 
 			if readResult.err != nil {
 				// Error reading from ip connection
 				connErr = readResult.err
 			} else {
+				time.Sleep(SerialBeforeSleepTime)
+
 				_, serialErr = serPort.Write(ip2serBuf[0:readResult.bytesRead])
 
 				log.Debug("main - Write to Serial: %d", readResult.bytesRead)
@@ -212,7 +249,7 @@ func main() {
 
 				}
 
-				time.Sleep(SleepTime)
+				time.Sleep(SerialAfterSleepTime)
 				log.Debug("main - End IP->Serial")
 
 			}
@@ -268,7 +305,7 @@ func readProc(src io.Reader, buf []byte, result chan readResult, readMore chan b
 
 	for {
 
-		<-time.After(Response_Interval)
+		<-time.After(BeforeReadSleepTime)
 		n, err := src.Read(buf)
 		log.Trace("readProc - readResult go")
 		result <- readResult{bytesRead: n, err: err}
